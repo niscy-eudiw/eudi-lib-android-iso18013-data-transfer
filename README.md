@@ -52,6 +52,22 @@ The released software is a initial development release version:
 
 ### Dependencies
 
+In order to use snapshot versions add the following to your project's settings.gradle file:
+
+```groovy
+
+dependencyResolutionManagement {
+    repositories {
+        // ...
+        maven {
+            url = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+            mavenContent { snapshotsOnly() }
+        }
+        // ...
+    }
+}
+```
+
 To include the library in your project, add the following dependencies to your app's build.gradle
 file.
 
