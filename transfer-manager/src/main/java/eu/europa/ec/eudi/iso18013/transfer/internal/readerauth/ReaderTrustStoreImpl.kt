@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024 European Commission
+ * Copyright (c) 2023-2025 European Commission
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package eu.europa.ec.eudi.iso18013.transfer.internal.readerauth
 
 import android.util.Log
-import eu.europa.ec.eudi.iso18013.transfer.internal.TAG
 import eu.europa.ec.eudi.iso18013.transfer.internal.readerauth.crl.CertificateCRLValidation
 import eu.europa.ec.eudi.iso18013.transfer.internal.readerauth.crl.CertificateCRLValidationException
 import eu.europa.ec.eudi.iso18013.transfer.internal.readerauth.profile.ProfileValidation
@@ -55,11 +54,24 @@ internal class ReaderTrustStoreImpl(
         return null
     }
 
+    /**
+     * Validates the certification trust path of a document signer.
+     *
+     * This function verifies the certificate chain against a set of trusted certificates
+     * and performs additional profile validation on the signer's certificate.
+     *
+     * @param chainToDocumentSigner The certificate chain leading to the document signer's certificate.
+     * @return `true` if the certification trust path is valid, `false` otherwise.
+     */
     override fun validateCertificationTrustPath(chainToDocumentSigner: List<X509Certificate>): Boolean {
-        for (cert in chainToDocumentSigner) {
-            val certificateList = arrayListOf(cert, *trustedCertificates.toTypedArray())
 
+        val certificate = chainToDocumentSigner.lastOrNull() ?: return false
+        var result = false
+
+        for (cert in chainToDocumentSigner) {
             try {
+                val certificateList = arrayListOf(cert, *trustedCertificates.toTypedArray())
+
                 val certStore = CertStore.getInstance(
                     "Collection",
                     CollectionCertStoreParameters(certificateList),
@@ -83,38 +95,32 @@ internal class ReaderTrustStoreImpl(
                     validator.validate(certPath, param) as PKIXCertPathValidatorResult
                 val trustAnchor = certPathValidationResult.trustAnchor
 
-                // Profile validation
-                val profileValidationResult =
-                    when (val trustAnchorCertificate = trustAnchor.trustedCert) {
-                        null -> false
-                        else -> profileValidation.validate(cert, trustAnchorCertificate)
-                    }
-
-                // CRL Validation
                 CertificateCRLValidation.verify(cert)
-                CertificateCRLValidation.verify(trustAnchor.trustedCert)
 
-                if (profileValidationResult) return true
+                trustAnchor.trustedCert?.let { trustedCert ->
+                    CertificateCRLValidation.verify(trustedCert)
+                    if (cert == certificate) {
+                        result = profileValidation.validate(cert, trustedCert)
+                    }
+                }
+
             } catch (e: Exception) {
                 when (e) {
-                    is InvalidAlgorithmParameterException -> Log.d(
-                        this.TAG,
-                        "INVALID_ALGORITHM_PARAMETER",
-                        e,
-                    )
+                    is InvalidAlgorithmParameterException ->
+                        Log.d(TAG, "INVALID_ALGORITHM_PARAMETER", e)
 
-                    is NoSuchAlgorithmException -> Log.d(this.TAG, "NO_SUCH_ALGORITHM", e)
-                    is CertificateException -> Log.d(this.TAG, "CERTIFICATE_ERROR", e)
-                    is CertPathValidatorException -> Log.d(this.TAG, "CERTIFICATE_PATH_ERROR", e)
-                    is CertificateCRLValidationException -> Log.d(
-                        this.TAG,
-                        "CERTIFICATE_REVOKED",
-                        e,
-                    )
+                    is NoSuchAlgorithmException -> Log.d(TAG, "NO_SUCH_ALGORITHM", e)
+                    is CertificateException -> Log.d(TAG, "CERTIFICATE_ERROR", e)
+                    is CertPathValidatorException -> Log.d(TAG, "CERTIFICATE_PATH_ERROR", e)
+                    is CertificateCRLValidationException -> Log.d(TAG, "CERTIFICATE_REVOKED", e)
+                    else -> Log.d(TAG, "UNKNOWN_ERROR", e)
                 }
             }
         }
+        return result
+    }
 
-        return false
+    companion object {
+        private const val TAG = "ReaderTrustStoreImpl"
     }
 }
