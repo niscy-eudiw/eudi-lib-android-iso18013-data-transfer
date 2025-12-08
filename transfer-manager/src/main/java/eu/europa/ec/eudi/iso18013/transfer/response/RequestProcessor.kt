@@ -51,7 +51,7 @@ fun interface RequestProcessor {
              * @param signatureAlgorithm the signature algorithm
              * @return the response result containing the response or the error
              */
-            abstract fun generateResponse(
+            abstract suspend fun generateResponse(
                 disclosedDocuments: DisclosedDocuments,
                 signatureAlgorithm: Algorithm? = null,
             ): ResponseResult

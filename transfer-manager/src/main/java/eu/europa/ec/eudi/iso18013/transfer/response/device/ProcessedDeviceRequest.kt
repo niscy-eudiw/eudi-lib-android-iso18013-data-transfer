@@ -27,7 +27,6 @@ import eu.europa.ec.eudi.iso18013.transfer.response.RequestedDocuments
 import eu.europa.ec.eudi.iso18013.transfer.response.ResponseResult
 import eu.europa.ec.eudi.wallet.document.DocumentId
 import eu.europa.ec.eudi.wallet.document.DocumentManager
-import kotlinx.coroutines.runBlocking
 import org.multipaz.crypto.Algorithm
 import org.multipaz.mdoc.response.DeviceResponseGenerator
 import org.multipaz.util.Constants
@@ -53,7 +52,7 @@ class ProcessedDeviceRequest(
      * @param signatureAlgorithm the signature algorithm to use for the document responses
      * @return the response result with the device response or the error
      */
-    override fun generateResponse(
+    override suspend fun generateResponse(
         disclosedDocuments: DisclosedDocuments,
         signatureAlgorithm: Algorithm? // TODO: signatureAlgorithm remove this parameter ?
     ): ResponseResult {
@@ -66,13 +65,12 @@ class ProcessedDeviceRequest(
                     else it
                 }
                 .forEachIndexed { index, disclosedDocument ->
-                    val documentResponse = runBlocking {
-                        documentManager.getValidIssuedMsoMdocDocumentById(disclosedDocument.documentId)
-                    }.assertAgeOverRequestLimitForIso18013(disclosedDocument)
+                    val documentResponse = documentManager.getValidIssuedMsoMdocDocumentById(disclosedDocument.documentId)
+                        .assertAgeOverRequestLimitForIso18013(disclosedDocument)
                         .generateDocumentResponse(
                             transcript = sessionTranscript,
                             elements = disclosedDocument.disclosedItems.asMap(),
-                            keyUnlockData = disclosedDocument.keyUnlockData
+                            unlockReason = disclosedDocument.unlockReason
                         )
                         .getOrThrow()
                     deviceResponse.addDocument(documentResponse)

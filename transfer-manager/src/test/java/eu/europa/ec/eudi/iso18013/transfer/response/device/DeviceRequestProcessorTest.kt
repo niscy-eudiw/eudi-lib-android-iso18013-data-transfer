@@ -31,6 +31,7 @@ import eu.europa.ec.eudi.wallet.document.IssuedDocument
 import eu.europa.ec.eudi.wallet.document.format.MsoMdocData
 import eu.europa.ec.eudi.wallet.document.format.MsoMdocFormat
 import io.mockk.mockk
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.BeforeClass
@@ -104,15 +105,17 @@ class DeviceRequestProcessorTest {
         val documentData = expectedDocument.data
         assertIs<MsoMdocData>(documentData)
 
-        val responseResult = processedRequest.generateResponse(
-            disclosedDocuments = DisclosedDocuments(
-                DisclosedDocument(
-                    documentId = expectedDocument.id,
-                    disclosedItems = documentData.nameSpaces.toDocItems(),
-                )
-            ),
-            signatureAlgorithm = Algorithm.ES256,
-        )
+        val responseResult = runBlocking {
+            processedRequest.generateResponse(
+                disclosedDocuments = DisclosedDocuments(
+                    DisclosedDocument(
+                        documentId = expectedDocument.id,
+                        disclosedItems = documentData.nameSpaces.toDocItems(),
+                    )
+                ),
+                signatureAlgorithm = Algorithm.ES256,
+            )
+        }
 
         assertIs<ResponseResult.Success>(responseResult)
         assertIs<DeviceResponse>(responseResult.response)
@@ -131,15 +134,17 @@ class DeviceRequestProcessorTest {
         val documentData = expectedDocument.data
         assertIs<MsoMdocData>(documentData)
 
-        val responseResult = processedRequest.generateResponse(
-            disclosedDocuments = DisclosedDocuments(
-                DisclosedDocument(
-                    documentId = expectedDocument.id,
-                    disclosedItems = documentData.nameSpaces.toDocItems(),
-                )
-            ),
-            signatureAlgorithm = Algorithm.ES256,
-        )
+        val responseResult = runBlocking {
+            processedRequest.generateResponse(
+                disclosedDocuments = DisclosedDocuments(
+                    DisclosedDocument(
+                        documentId = expectedDocument.id,
+                        disclosedItems = documentData.nameSpaces.toDocItems(),
+                    )
+                ),
+                signatureAlgorithm = Algorithm.ES256,
+            )
+        }
 
         assertIs<ResponseResult.Failure>(responseResult)
         assertIs<KeyLockedException>(responseResult.throwable)
@@ -158,16 +163,18 @@ class DeviceRequestProcessorTest {
         val documentData = expectedDocument.data
         assertIs<MsoMdocData>(documentData)
 
-        val responseResult = processedRequest.generateResponse(
-            disclosedDocuments = DisclosedDocuments(
-                DisclosedDocument(
-                    documentId = expectedDocument.id,
-                    disclosedItems = documentData.nameSpaces.toDocItems(),
-                    keyUnlockData = SoftwareKeyUnlockData(KeyLockPassphrase)
-                )
-            ),
-            signatureAlgorithm = Algorithm.ES256,
-        )
+        val responseResult = runBlocking {
+            processedRequest.generateResponse(
+                disclosedDocuments = DisclosedDocuments(
+                    DisclosedDocument(
+                        documentId = expectedDocument.id,
+                        disclosedItems = documentData.nameSpaces.toDocItems(),
+                        keyUnlockData = SoftwareKeyUnlockData(KeyLockPassphrase)
+                    )
+                ),
+                signatureAlgorithm = Algorithm.ES256,
+            )
+        }
 
         assertIs<ResponseResult.Success>(responseResult)
         assertIs<DeviceResponse>(responseResult.response)

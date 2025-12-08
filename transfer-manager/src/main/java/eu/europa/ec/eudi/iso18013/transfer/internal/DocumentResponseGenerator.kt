@@ -21,13 +21,12 @@ import eu.europa.ec.eudi.wallet.document.IssuedDocument
 import eu.europa.ec.eudi.wallet.document.NameSpace
 import eu.europa.ec.eudi.wallet.document.credential.CredentialIssuedData
 import eu.europa.ec.eudi.wallet.document.credential.getIssuedData
-import kotlinx.coroutines.runBlocking
 import org.multipaz.document.DocumentRequest
 import org.multipaz.document.NameSpacedData
 import org.multipaz.mdoc.credential.MdocCredential
 import org.multipaz.mdoc.response.DocumentGenerator
 import org.multipaz.mdoc.util.MdocUtil
-import org.multipaz.securearea.KeyUnlockData
+import org.multipaz.securearea.UnlockReason
 
 internal object DocumentResponseGenerator {
 
@@ -39,53 +38,51 @@ internal object DocumentResponseGenerator {
      * @param document the document to generate the response for
      * @param transcript the transcript to use for the response
      * @param elements the elements to include in the response
-     * @param keyUnlockData the key unlock data for unlocking the document key if needed
+     * @param unlockReason the reason for unlocking the document key, used for authentication prompts
      * @throws IllegalArgumentException if the document format is not MsoMdocFormat, the document key is invalidated,
      * @throws org.multipaz.securearea.KeyLockedException if the document key is locked and cannot be unlocked
      */
     @JvmStatic
     @JvmOverloads
-    fun generate(
+    suspend fun generate(
         document: IssuedDocument,
         transcript: ByteArray,
         elements: Map<NameSpace, List<ElementIdentifier>>? = null,
-        keyUnlockData: KeyUnlockData? = null
+        unlockReason: UnlockReason = UnlockReason.Unspecified
     ): ByteArray {
-        return runBlocking {
-            document.consumingCredential {
-                require(this is MdocCredential) { "Document must be in MsoMdocFormat" }
-                val credentialIssuedData =
-                    getIssuedData<CredentialIssuedData.MsoMdoc>()
-                val (nameSpacedData, staticAuthData) = credentialIssuedData.getOrThrow()
-                val dataElements = (elements ?: nameSpacedData.nameSpaceNames.associateWith {
-                    nameSpacedData.getDataElementNames(it)
-                }).flatMap { (nameSpace, elementIdentifiers) ->
-                    elementIdentifiers.map { elementIdentifier ->
-                        DocumentRequest.DataElement(nameSpace, elementIdentifier, false)
-                    }
+        return document.consumingCredential {
+            require(this is MdocCredential) { "Document must be in MsoMdocFormat" }
+            val credentialIssuedData =
+                getIssuedData<CredentialIssuedData.MsoMdoc>()
+            val (nameSpacedData, staticAuthData) = credentialIssuedData.getOrThrow()
+            val dataElements = (elements ?: nameSpacedData.nameSpaceNames.associateWith {
+                nameSpacedData.getDataElementNames(it)
+            }).flatMap { (nameSpace, elementIdentifiers) ->
+                elementIdentifiers.map { elementIdentifier ->
+                    DocumentRequest.DataElement(nameSpace, elementIdentifier, false)
                 }
-                val request = DocumentRequest(dataElements)
+            }
+            val request = DocumentRequest(dataElements)
 
-                val mergedIssuerNamespaces = MdocUtil.mergeIssuerNamesSpaces(
-                    request, nameSpacedData, staticAuthData
+            val mergedIssuerNamespaces = MdocUtil.mergeIssuerNamesSpaces(
+                request, nameSpacedData, staticAuthData
+            )
+            DocumentGenerator(docType, staticAuthData.issuerAuth, transcript)
+                .setIssuerNamespaces(mergedIssuerNamespaces)
+                .setDeviceNamespacesSignature(
+                    dataElements = NameSpacedData.Builder().build(),
+                    secureArea = secureArea,
+                    keyAlias = alias,
+                    unlockReason = unlockReason
                 )
-                DocumentGenerator(docType, staticAuthData.issuerAuth, transcript)
-                    .setIssuerNamespaces(mergedIssuerNamespaces)
-                    .setDeviceNamespacesSignature(
-                        dataElements = NameSpacedData.Builder().build(),
-                        secureArea = secureArea,
-                        keyAlias = alias,
-                        keyUnlockData = keyUnlockData
-                    )
-                    .generate()
-            }.getOrThrow()
-        }
+                .generate()
+        }.getOrThrow()
     }
 
-    fun IssuedDocument.generateDocumentResponse(
+    suspend fun IssuedDocument.generateDocumentResponse(
         transcript: ByteArray,
         elements: Map<NameSpace, List<ElementIdentifier>>? = null,
-        keyUnlockData: KeyUnlockData? = null
+        unlockReason: UnlockReason = UnlockReason.Unspecified
     ): Result<ByteArray> {
         return try {
             Result.success(
@@ -93,7 +90,7 @@ internal object DocumentResponseGenerator {
                     this,
                     transcript,
                     elements,
-                    keyUnlockData
+                    unlockReason
                 )
             )
         } catch (e: Exception) {

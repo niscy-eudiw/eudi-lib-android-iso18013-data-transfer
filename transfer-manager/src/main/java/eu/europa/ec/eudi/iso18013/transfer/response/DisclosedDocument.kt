@@ -17,33 +17,33 @@
 package eu.europa.ec.eudi.iso18013.transfer.response
 
 import eu.europa.ec.eudi.wallet.document.DocumentId
-import org.multipaz.securearea.KeyUnlockData
+import org.multipaz.securearea.UnlockReason
 
 /**
  * Represents a response that contains the document data that will be sent to an mdoc verifier
  *
  * @property documentId the unique id of the document
  * @property disclosedItems a [List] that contains the document items [DocItem], i.e the namespaces and the data elements that will be sent in the device response after selective disclosure
- * @property keyUnlockData the key unlock data that will be used to unlock document's key for signing the response
+ * @property unlockReason the reason for unlocking document's key for signing the response, used for authentication prompts
  */
 data class DisclosedDocument(
     val documentId: DocumentId,
     val disclosedItems: List<DocItem>,
-    val keyUnlockData: KeyUnlockData? = null,
+    val unlockReason: UnlockReason = UnlockReason.Unspecified,
 ) {
     /**
      * Alternative constructor that takes a [RequestedDocument] and a [List] of [DocItem] to create a [DisclosedDocument]
      * @param requestedDocument the requested document
      * @param disclosedItems the list of disclosed items. If not provided, it will be set to the list of requested items
-     * @param keyUnlockData the key unlock data
+     * @param unlockReason the reason for unlocking the key, used for authentication prompts
      */
     constructor(
         requestedDocument: RequestedDocument,
         disclosedItems: List<DocItem>? = null,
-        keyUnlockData: KeyUnlockData? = null
+        unlockReason: UnlockReason = UnlockReason.Unspecified
     ) : this(
         requestedDocument.documentId,
         disclosedItems ?: requestedDocument.requestedItems.keys.toList(),
-        keyUnlockData
+        unlockReason
     )
 }
