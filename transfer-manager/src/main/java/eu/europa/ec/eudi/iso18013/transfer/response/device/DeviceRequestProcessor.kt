@@ -32,8 +32,6 @@ import eu.europa.ec.eudi.wallet.document.NameSpace
 import kotlinx.coroutines.runBlocking
 import org.multipaz.cbor.Cbor
 import org.multipaz.cbor.DataItem
-import org.multipaz.crypto.SignatureVerificationException
-import org.multipaz.mdoc.request.DeviceRequestParser
 import org.multipaz.mdoc.request.DeviceRequest as MultipazDeviceRequest
 
 /**
@@ -73,18 +71,12 @@ class DeviceRequestProcessor(
                 val parsedRequest: MultipazDeviceRequest =
                     MultipazDeviceRequest.fromDataItem(deviceRequestDataItem)
 
-                val isMultiPazReaderAuthValid = try {
-                    parsedRequest.verifyReaderAuthentication(sessionTranscriptDataItem)
-                    true
-                } catch (e: SignatureVerificationException) {
-                    false
-                }
-
-                // Process doc requests
+                // Process doc requests - verification happens inside performReaderAuthentication
                 parsedRequest.docRequests
                     .map { docRequest ->
                         docRequest.toRequestedMdocDocuments(
-                            isMultiPazReaderAuthValid
+                            parsedRequest,
+                            sessionTranscriptDataItem
                         )
                     }
                     .let { helper.getRequestedDocuments(it) }
@@ -150,16 +142,21 @@ class DeviceRequestProcessor(
 
     /**
      * Convert multipaz [MultipazDeviceRequest] to [RequestedMdocDocument].
+     * @param parsedRequest The full parsed DeviceRequest for signature verification
+     * @param sessionTranscript The session transcript DataItem for verification
      * @return the [RequestedMdocDocument]
      */
-    private fun org.multipaz.mdoc.request.DocRequest.toRequestedMdocDocuments(isValid: Boolean): RequestedMdocDocument {
+    private fun org.multipaz.mdoc.request.DocRequest.toRequestedMdocDocuments(
+        parsedRequest: MultipazDeviceRequest,
+        sessionTranscript: DataItem
+    ): RequestedMdocDocument {
         return RequestedMdocDocument(
             docType = docType,
             requested = nameSpaces.mapValues { (_, dataElements) ->
                 dataElements.mapKeys { (elementName, _) -> elementName }
             },
             readerAuthentication = {
-                readerTrustStore?.performReaderAuthentication(this, isValid)
+                readerTrustStore?.performReaderAuthentication(this, parsedRequest, sessionTranscript)
             },
         )
     }
