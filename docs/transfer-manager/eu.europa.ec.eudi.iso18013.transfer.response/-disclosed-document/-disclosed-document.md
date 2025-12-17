@@ -18,4 +18,4 @@ androidJvm
 | keyUnlockData | the key unlock data |
 
 [androidJvm]\
-constructor(documentId: DocumentId, disclosedItems: [List](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin.collections/-list/index.html)&lt;[DocItem](../-doc-item/index.md)&gt;, keyUnlockData: KeyUnlockData? = null)
+constructor(documentId: &lt;Error class: unknown class&gt;, disclosedItems: [List](https://kotlinlang.org/api/latest/jvm/stdlib/kotlin-stdlib/kotlin.collections/-list/index.html)&lt;[DocItem](../-doc-item/index.md)&gt;, keyUnlockData: KeyUnlockData? = null)
