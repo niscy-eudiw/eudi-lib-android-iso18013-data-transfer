@@ -3,4 +3,4 @@
 # documentId
 
 [androidJvm]\
-val [documentId](document-id.md): DocumentId
+val [documentId](document-id.md): &lt;Error class: unknown class&gt;
