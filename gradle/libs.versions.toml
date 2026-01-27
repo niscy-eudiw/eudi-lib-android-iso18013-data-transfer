@@ -21,6 +21,7 @@ robolectricVersion = "4.15.1"
 sonarqube = "6.2.0.5505"
 zxing-core = "3.5.3"
 kover = "0.9.1"
+kotlin-coroutines-test = "1.10.2"
 
 [libraries]
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -37,8 +38,10 @@ mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 multipaz-android = { module = "org.multipaz:multipaz-android", version.ref = "multipaz" }
 multipaz-android-legacy = { module = "org.multipaz:multipaz-android-legacy", version.ref = "multipaz" }
+multipaz-longfellow = { module = "org.multipaz:multipaz-longfellow", version.ref = "multipaz" }
 robolectric-robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectricVersion" }
 zxing-core = { module = "com.google.zxing:core", version.ref = "zxing-core" }
+kotlin-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlin-coroutines-test" }
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }

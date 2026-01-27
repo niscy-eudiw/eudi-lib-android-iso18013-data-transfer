@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 European Commission
+ * Copyright (c) 2024-2026 European Commission
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,12 +31,8 @@ import eu.europa.ec.eudi.wallet.document.IssuedDocument
 import eu.europa.ec.eudi.wallet.document.format.MsoMdocData
 import eu.europa.ec.eudi.wallet.document.format.MsoMdocFormat
 import io.mockk.mockk
-import org.junit.After
-import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Test
 import org.mockito.MockedStatic
-import org.multipaz.crypto.Algorithm
 import org.multipaz.securearea.KeyLockedException
 import org.multipaz.securearea.software.SoftwareKeyUnlockData
 import kotlin.test.AfterTest
@@ -111,7 +107,7 @@ class DeviceRequestProcessorTest {
                     disclosedItems = documentData.nameSpaces.toDocItems(),
                 )
             ),
-            signatureAlgorithm = Algorithm.ES256,
+            signatureAlgorithm = null,
         )
 
         assertIs<ResponseResult.Success>(responseResult)
@@ -138,7 +134,7 @@ class DeviceRequestProcessorTest {
                     disclosedItems = documentData.nameSpaces.toDocItems(),
                 )
             ),
-            signatureAlgorithm = Algorithm.ES256,
+            signatureAlgorithm = null,
         )
 
         assertIs<ResponseResult.Failure>(responseResult)
@@ -166,7 +162,7 @@ class DeviceRequestProcessorTest {
                     keyUnlockData = SoftwareKeyUnlockData(KeyLockPassphrase)
                 )
             ),
-            signatureAlgorithm = Algorithm.ES256,
+            signatureAlgorithm = null,
         )
 
         assertIs<ResponseResult.Success>(responseResult)

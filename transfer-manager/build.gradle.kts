@@ -121,6 +121,8 @@ dependencies {
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.kotlin.coroutines.test)
+    androidTestImplementation(libs.multipaz.longfellow)
 }
 
 // Dependency check
