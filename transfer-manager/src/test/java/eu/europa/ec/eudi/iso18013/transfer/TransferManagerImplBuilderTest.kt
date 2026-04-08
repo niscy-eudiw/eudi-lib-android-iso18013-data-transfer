@@ -20,9 +20,8 @@ import android.util.Log
 import eu.europa.ec.eudi.iso18013.transfer.engagement.DeviceRetrievalMethod
 import eu.europa.ec.eudi.iso18013.transfer.readerauth.ReaderTrustStore
 import eu.europa.ec.eudi.iso18013.transfer.response.device.DeviceRequestProcessor
+import eu.europa.ec.eudi.iso18013.transfer.zkp.ZkResponsePolicy
 import io.mockk.mockk
-import org.junit.After
-import org.junit.Before
 import org.mockito.MockedStatic
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -76,6 +75,20 @@ class TransferManagerImplBuilderTest {
         assertNotNull(transferManager)
         assertIs<DeviceRequestProcessor>(transferManager.requestProcessor)
         assertEquals(retrievalMethods, transferManager.retrievalMethods)
+    }
+
+    @Test
+    fun buildTransferManagerWithDefaultZkResponsePolicy() {
+        val transferManager = TransferManagerImpl.Builder(Context)
+            .documentManager(createDocumentManager(null))
+            .build()
+
+        assertNotNull(transferManager)
+        assertIs<DeviceRequestProcessor>(transferManager.requestProcessor)
+        assertEquals(
+            ZkResponsePolicy.FallbackToFullDisclosure,
+            (transferManager.requestProcessor as DeviceRequestProcessor).zkResponsePolicy
+        )
     }
 
     @Test

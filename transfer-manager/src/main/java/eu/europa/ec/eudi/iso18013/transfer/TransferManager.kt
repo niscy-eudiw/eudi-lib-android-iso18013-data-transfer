@@ -22,6 +22,7 @@ import eu.europa.ec.eudi.iso18013.transfer.engagement.NfcEngagementService
 import eu.europa.ec.eudi.iso18013.transfer.readerauth.ReaderTrustStore
 import eu.europa.ec.eudi.iso18013.transfer.response.RequestProcessor
 import eu.europa.ec.eudi.iso18013.transfer.response.Response
+import eu.europa.ec.eudi.iso18013.transfer.zkp.ZkResponsePolicy
 import eu.europa.ec.eudi.wallet.document.DocumentManager
 import org.multipaz.mdoc.zkp.ZkSystemRepository
 
@@ -93,6 +94,9 @@ interface TransferManager : TransferEvent.Listenable {
          * @param readerTrustStore
          * @param retrievalMethods
          * @param zkSystemRepository
+         * @param zkResponsePolicy the ZK response policy to use when ZK proof generation fails.
+         * Defaults to [ZkResponsePolicy.FallbackToFullDisclosure] for backwards compatibility.
+         * Consider using [ZkResponsePolicy.Strict] for production to prevent unintended full disclosure.
          * @return a [TransferManagerImpl]
          */
         @JvmStatic
@@ -101,12 +105,14 @@ interface TransferManager : TransferEvent.Listenable {
             documentManager: DocumentManager,
             readerTrustStore: ReaderTrustStore? = null,
             retrievalMethods: List<DeviceRetrievalMethod>? = null,
-            zkSystemRepository: ZkSystemRepository? = null
+            zkSystemRepository: ZkSystemRepository? = null,
+            zkResponsePolicy: ZkResponsePolicy = ZkResponsePolicy.FallbackToFullDisclosure
         ): TransferManager = TransferManagerImpl(context) {
             documentManager(documentManager)
             readerTrustStore?.let { readerTrustStore(it) }
             retrievalMethods?.let { retrievalMethods(it) }
             zkSystemRepository?.let { zkSystemRepository(it) }
+            zkResponsePolicy(zkResponsePolicy)
         }
     }
 }

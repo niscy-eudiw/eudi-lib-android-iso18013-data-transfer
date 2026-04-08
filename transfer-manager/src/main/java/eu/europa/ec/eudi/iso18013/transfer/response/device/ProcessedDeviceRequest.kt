@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 European Commission
+ * Copyright (c) 2024-2026 European Commission
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import eu.europa.ec.eudi.iso18013.transfer.response.DisclosedDocuments
 import eu.europa.ec.eudi.iso18013.transfer.response.RequestProcessor
 import eu.europa.ec.eudi.iso18013.transfer.response.RequestedDocuments
 import eu.europa.ec.eudi.iso18013.transfer.response.ResponseResult
+import eu.europa.ec.eudi.iso18013.transfer.zkp.ZkResponsePolicy
 import eu.europa.ec.eudi.wallet.document.DocumentId
 import eu.europa.ec.eudi.wallet.document.DocumentManager
 import kotlinx.coroutines.runBlocking
@@ -40,11 +41,13 @@ import kotlin.time.ExperimentalTime
  * @property sessionTranscript the session transcript
  * @property requestedDocuments the requested documents
  * @property includeOnlyRequested whether to include only the requested documents or all the disclosed documents. Default is true.
+ * @property zkResponsePolicy the policy to use when ZK proof generation fails. Default is [ZkResponsePolicy.FallbackToFullDisclosure].
  */
 class ProcessedDeviceRequest(
     private val documentManager: DocumentManager,
     private val sessionTranscript: ByteArray,
-    requestedDocuments: RequestedDocuments
+    requestedDocuments: RequestedDocuments,
+    private val zkResponsePolicy: ZkResponsePolicy = ZkResponsePolicy.FallbackToFullDisclosure
 ) : RequestProcessor.ProcessedRequest.Success(requestedDocuments) {
 
     var includeOnlyRequested: Boolean = true
@@ -90,18 +93,29 @@ class ProcessedDeviceRequest(
                         // No matched ZK system, add encoded document
                         deviceResponseGenerator.addDocument(encodedDocument)
                     } else {
-                        // Matched ZK system found, try to generate ZK proof
-                        runCatching {
-                            matchedZkSystem.system.generateProof(
-                                zkSystemSpec = matchedZkSystem.spec,
-                                encodedDocument = ByteString(encodedDocument),
-                                encodedSessionTranscript = ByteString(sessionTranscript)
-                            )
-                        }.onSuccess { zkDocument ->
-                            deviceResponseGenerator.addZkDocument(zkDocument)
-                        }.onFailure {
-                            // Fallback to encoded document if ZK proof generation fails
-                            deviceResponseGenerator.addDocument(encodedDocument)
+                        when (zkResponsePolicy) {
+                            ZkResponsePolicy.Strict -> {
+                                val zkDocument = matchedZkSystem.system.generateProof(
+                                    zkSystemSpec = matchedZkSystem.spec,
+                                    encodedDocument = ByteString(encodedDocument),
+                                    encodedSessionTranscript = ByteString(sessionTranscript)
+                                )
+                                deviceResponseGenerator.addZkDocument(zkDocument)
+                            }
+
+                            ZkResponsePolicy.FallbackToFullDisclosure -> {
+                                runCatching {
+                                    matchedZkSystem.system.generateProof(
+                                        zkSystemSpec = matchedZkSystem.spec,
+                                        encodedDocument = ByteString(encodedDocument),
+                                        encodedSessionTranscript = ByteString(sessionTranscript)
+                                    )
+                                }.onSuccess { zkDocument ->
+                                    deviceResponseGenerator.addZkDocument(zkDocument)
+                                }.onFailure {
+                                    deviceResponseGenerator.addDocument(encodedDocument)
+                                }
+                            }
                         }
                     }
                     documentIds.add(disclosedDocument.documentId)
