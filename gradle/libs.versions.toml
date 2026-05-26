@@ -1,5 +1,5 @@
 [versions]
-agp = "9.0.1"
+agp = "9.1.1"
 appcompat = "1.7.1"
 bouncy-castle = "1.78.1"
 dependency-license-report = "2.9"
